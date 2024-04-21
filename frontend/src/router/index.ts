@@ -3,7 +3,7 @@ import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
 const routes: RouteRecordRaw[] = [
 	{
 		path: '/',
-		component: () => import('../pages/MainPage.vue'),
+		component: () => import('../pages/LoginPage.vue'),
 	},
 ];
 
