@@ -14,8 +14,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
+import { BaseApi } from '../api/BaseApi'; // Замените на путь к вашему файлу API
 
 export default defineComponent({
   data() {
@@ -25,18 +27,39 @@ export default defineComponent({
       errorMessage: '',
     }
   },
-  methods: {
-    validateInput() {
-      const router = useRouter();
-      if (this.login && this.login.length > 1 && this.password && this.password.length > 1) {
-          router.push('/profile');
+  setup() {
+    const router = useRouter();
+    const login = ref('');
+    const password = ref('');
+    const errorMessage = ref('');
+
+    const validateInput = async () => {
+      if (login.value && login.value.length > 1 && password.value && password.value.length > 1) {
+        try {
+          const response = await BaseApi.login(login.value, password.value);
+          if (response.status === 200) {
+            router.push('/main');
+          } else {
+            errorMessage.value = 'Неверный логин или пароль.';
+          }
+        } catch (error) {
+          errorMessage.value = 'Произошла ошибка при попытке входа.';
+        }
       } else {
-        this.errorMessage = 'Логин и пароль должны быть длиннее одного символа.';
+        errorMessage.value = 'Логин и пароль должны быть длиннее одного символа.';
       }
-    }
+    };
+
+    return {
+      login,
+      password,
+      errorMessage,
+      validateInput
+    };
   }
 });
 </script>
+
 <style scoped>
 * {
     overflow: hidden;
@@ -51,7 +74,7 @@ export default defineComponent({
     position: absolute;
     margin-top: -13%;
     width: 100%;
-    z-index: 0;
+    z-index: -100;
     animation: gradient_anim 10s ease-in-out infinite;
 }
 
@@ -72,13 +95,14 @@ export default defineComponent({
 .menu {
     position: absolute;
     z-index: 2;
-    word-spacing: 2vw;
+    word-spacing:2vw;
     display: inline-block;
+    font-style: color black;
     text-align: center;
     width: 40%;
     height: 7%;
     font-size: 1.1vw;
-    font-family: Helvetica, sans-serif; /* Changed font family */
+    font-family: "Helvetica";
     margin-top: 1.6%;
     margin-left: 56%;
 }
@@ -142,17 +166,17 @@ export default defineComponent({
     position: absolute;
     z-index: 4;
     font-size: 2vw;
-    font-family: Helvetica, Arial, sans-serif;
+    font-family: Helvetica;
     font-weight: bold;
-    margin-left: 46%;
-    margin-top: 18%;
+margin-left: 46%;
+margin-top: 18%;
 }
 
 .sign-in-button {
     position: absolute;
     z-index: 4;
-    text-decoration: none;
-    font-family: Helvetica, Arial, sans-serif;
+    text-decoration: black;
+    font-family:  Helvetica;
     font-weight: bold;
     border-radius: 0%;
     border: none;
