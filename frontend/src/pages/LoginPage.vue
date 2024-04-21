@@ -12,54 +12,66 @@
         <p class="error_message">{{ errorMessage }}</p>
     </div>
 </template>
-
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { userdataUserApi, touchMeApi } from '../api';
+import { useProfileStore } from '../store';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
-import { BaseApi } from '../api/BaseApi'; // Замените на путь к вашему файлу API
 
-export default defineComponent({
-  data() {
-    return {
-      login: '',
-      password: '',
-      errorMessage: '',
-    }
-  },
-  setup() {
-    const router = useRouter();
-    const login = ref('');
-    const password = ref('');
-    const errorMessage = ref('');
+const profileStore = useProfileStore();
+const router = useRouter();
 
-    const validateInput = async () => {
-      if (login.value && login.value.length > 1 && password.value && password.value.length > 1) {
-        try {
-          const response = await BaseApi.login(login.value, password.value);
-          if (response.status === 200) {
-            router.push('/main');
-          } else {
-            errorMessage.value = 'Неверный логин или пароль.';
-          }
-        } catch (error) {
-          errorMessage.value = 'Произошла ошибка при попытке входа.';
-        }
-      } else {
-        errorMessage.value = 'Логин и пароль должны быть длиннее одного символа.';
-      }
-    };
+const showUserWarn = ref(false);
+const showClickWarn = ref(false);
+const clickResult = ref<number | null>(null);
 
-    return {
-      login,
-      password,
-      errorMessage,
-      validateInput
-    };
-  }
+onMounted(async () => {
+	// Проверка токена
+	const token = profileStore.token;
+	if (token) {
+		const resp = await touchMeApi.getTouch(); 
+		if (resp.status === 200) {
+			router.push('/profile'); 
+			return;
+		}
+	}
+
+	// Get username
+	if (!profileStore.full_name && profileStore.id) {
+		const resp = await userdataUserApi.getById(profileStore.id);
+		if (resp.status != 200) {
+			showUserWarn.value = true;
+			return;
+		}
+		const data = resp.data;
+		if (!data || !data.items) {
+			showUserWarn.value = true;
+			return;
+		}
+		const nameItem = data.items.find(item => {
+			return item.category == 'Личная информация' && item.param == 'Полное имя';
+		});
+		if (!nameItem) {
+			showUserWarn.value = true;
+			return;
+		}
+		profileStore.full_name = nameItem?.value ?? null;
+	}
+
+	// Get touch data
+	const resp = await touchMeApi.getTouch();
+	if (resp.status != 200) {
+		showClickWarn.value = true;
+		return;
+	}
+	const data = resp.data;
+	if (!data || !data.count) {
+		showClickWarn.value = true;
+		return;
+	}
+	clickResult.value = +data.count;
 });
 </script>
-
 <style scoped>
 * {
     overflow: hidden;
